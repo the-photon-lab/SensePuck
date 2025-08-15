@@ -39,17 +39,17 @@ The SensePuck is designed with low-power operation as a primary goal, making it 
 
 The power section is designed for efficiency, reliability, and safety in long-term battery-powered applications.
 
-*   **Power Source:** The board is designed to be powered by a standard 3.7V single-cell LiPo battery. A physical **slide switch (S1)** serves as the master On/Off control. For development and charging, it uses a **USB-C connector (J1)**. The USB input is protected by a **resettable fuse (F1)** and **ESD protection diodes (U3, D1)** to guard against overcurrent and electrical discharge events.
+*   **Power Source:** The board is designed to be powered by a standard 3.7V single-cell LiPo battery. A physical **slide switch (S1)** serves as the master On/Off control by controlling the `ENABLE` pin of the TPS62821DLCR buck converter. For development and charging, it uses a **USB-C connector (J1)**. The USB input is protected by a **resettable fuse (F1)** and **ESD protection diodes (U3, D1)** to guard against overcurrent and electrical discharge events.
 
-*   **Battery Charging:** The **MCP73831T (U4)** is a dedicated LiPo/Li-Ion charge management controller IC that provides safe and reliable single-cell charging. The charge current is set to ~200mA via resistor **R14**, a conservative value suitable for a wide range of small LiPo batteries. A P-Channel MOSFET **(Q3)** provides reverse-polarity protection for the battery. The MCU can monitor the charging state (`Charging`/`Done`) via the `CHG_STAT` pin.
+*   **Battery Charging:** The **MCP73831T (U4)** is a dedicated LiPo/Li-Ion charge management controller IC that provides reliable single-cell charging. The charge current is set to ~200mA via resistor **R14**, a conservative value suitable for a wide range of small LiPo batteries. A P-Channel MOSFET **(Q3)** provides reverse-polarity protection for the battery. The MCU can monitor the charging state (`Charging`/`Done`) via the `CHG_STAT` pin.
 
-*   **Voltage Regulation:** The main 3.3V power supply is based on the **TPS62821DLCR (U2)**, a high-efficiency synchronous buck (step-down) converter. It takes the variable battery voltage and generates a stable 3.3V supply for the ESP32 and all peripherals. It offers an **extremely low quiescent current of just 60nA**, which is the tiny amount of power it consumes just by being on. This power consumption helps in achieving multi-week or multi-month battery life when the ESP32 is in deep sleep.
+*   **Voltage Regulation:** The main 3.3V power supply is based on the **TPS62821DLCR (U2)**, a high-efficiency synchronous buck (step-down) converter. It takes the battery voltage and generates a stable 3.3V supply for the ESP32 and all peripherals. It offers an **extremely low quiescent current of just 60nA**, which is the tiny amount of power it consumes just by being on. This power consumption helps in achieving multi-week or multi-month battery life when the ESP32 is in deep sleep.
 
 *   **Hardware Failsafe:** A common failure point in battery-powered devices is unstable operation when the battery voltage drops. As the battery voltage falls below 3.3V, a standard buck converter enters "dropout mode," where it can no longer regulate, and the output voltage sags along with the battery. This can cause the ESP32 to enter a "brownout" state, leading to unpredictable resets, corrupted data on the SD card, or a boot-loop that quickly kills the battery.
 
     To prevent this, SensePuck incorporates a **TLV803EC30DBZR (U1) voltage supervisor**.
     *   It **independently** monitors the battery voltage, completely separate from the MCU, and consumes only ~0.4µA.
-    *   If the voltage drops below its fixed threshold of ~2.93V, the supervisor **immediately and automatically disables the buck converter** by pulling its `EN` (Enable) pin low.
+    *   If the voltage drops below its fixed threshold of ~3V, the supervisor **immediately and automatically disables the buck converter** by pulling its `EN` (Enable) pin low.
     *   This forces a **clean, hard shutdown**, preventing the entire system from operating with an unstable power supply. It also serves as the main protection against over-discharging and permanently damaging the battery, even if the main firmware has crashed.
 
 This hardware-based approach is more reliable than a software-only voltage check, which cannot prevent brownouts caused by sudden current spikes (e.g., Wi-Fi activation) or protect the battery if the software hangs.
@@ -102,14 +102,14 @@ This same power-gating principle is applied to the other major peripherals:
 
 | Reference | Component               | Description                                                                    | I2C Address |
 | :-------- | :---------------------- | :----------------------------------------------------------------------------- | :---------- |
-| U7        | ![ESP32-C6-MINI-1-N4](https://www.espressif.com/sites/default/files/documentation/esp32-c6-mini-1_datasheet_en.pdf)| Main Microcontroller with Wi-Fi 6, BT5, Zigbee, Thread                         | -           |
-| U5        | ![BME688](https://www.bosch-sensortec.com/media/boschsensortec/downloads/datasheets/bst-bme688-ds000.pdf)                  | Temperature, Humidity, Pressure & Gas (VOC) Sensor                             | `0x76`      |
-| U8        | ![SHT40-AD1B-R3CT-ND](https://sensirion.com/media/documents/33FD6951/67EB9032/HT_DS_Datasheet_SHT4x_5.pdf)      | High-Precision Temperature & Humidity Sensor                                   | `0x44`      |
-| U6        | ![LTR-390UV-01](https://optoelectronics.liteon.com/upload/download/DS86-2015-0004/LTR-390UV_Final_%20DS_V1%201.pdf)            | Ambient Light & UV Sensor                                                      | `0x53`      |
-| U4        | ![MCP73831T-2ACI_OT](https://ww1.microchip.com/downloads/en/DeviceDoc/MCP73831-Family-Data-Sheet-DS20001984H.pdf)       | Li-Ion/Li-Polymer Battery Charge Management Controller                         | -           |
-| U2        | ![TPS62821DLCR](https://www.ti.com/lit/ds/symlink/tps62823.pdf)            | High-Efficiency 3.3V Step-Down Converter                                       | -           |
-| J2        | ![104031-0811](https://www.molex.com/content/dam/molex/molex-dot-com/products/automated/en-us/salesdrawingpdf/104/104031/1040310811_sd.pdf)             | MicroSD Card Socket                                                            | -           |
-| D3        | ![WS2812B2020](https://www.mouser.com/pdfDocs/WS2812B-2020_V10_EN_181106150240761.pdf?srsltid=AfmBOor2YRgZNKkmvAVWGpjIqYjJLa462h8c7GnFeQCvZdrDD8ob9Q5K)             | Addressable RGB LED for status indication                                      | -           |
+| U7        | ESP32-C6-MINI-1-N4      | Main Microcontroller with Wi-Fi 6, BT5, Zigbee, Thread                         | -           |
+| U5        | BME688                  | Temperature, Humidity, Pressure & Gas (VOC) Sensor                             | `0x76`      |
+| U8        | SHT40-AD1B-R3CT-ND      | High-Precision Temperature & Humidity Sensor                                   | `0x44`      |
+| U6        | LTR-390UV-01            | Ambient Light & UV Sensor                                                      | `0x53`      |
+| U4        | MCP73831T-2ACI_OT       | Li-Ion/Li-Polymer Battery Charge Management Controller                         | -           |
+| U2        | TPS62821DLCR            | High-Efficiency 3.3V Step-Down Converter                                       | -           |
+| J2        | 104031-0811             | MicroSD Card Socket                                                            | -           |
+| D3        | WS2812B2020             | Addressable RGB LED for status indication                                      | -           |
 
 #### ESP32-C6 Pinout
 
@@ -118,7 +118,7 @@ This same power-gating principle is applied to the other major peripherals:
 | 12           | IO0  | LED Data                    | `LED_DATA`           | Data line for WS2812B RGB LED            |
 | 13           | IO1  | LED Power Enable            | `LED_ON`             | `LOW` = On, `HIGH` = Off                 |
 | 5            | IO2  | LTR-390UV Interrupt         | `LTR_INT`            | Active-low interrupt from light sensor   |
-| 6            | IO3  | Charger Status              | `CHG_STAT`           | `LOW` = Charging, `HIGH`/`Z` = Done      |
+| 6            | IO3  | Charger Status Read         | `CHG_STAT`           | `LOW` = Charging, `HIGH`/`Z` = Done      |
 | 9            | IO4  | Battery Measurement ADC     | `VBAT_MEASURE_ADC`   | ADC input for battery voltage            |
 | 10           | IO5  | Battery Measurement Enable  | `VBAT_MEASURE_ON`    | `LOW` = On, `HIGH` = Off                 |
 | 15           | IO6  | I2C Data                    | `I2C_SDA`            | Sensor I2C Bus                           |
