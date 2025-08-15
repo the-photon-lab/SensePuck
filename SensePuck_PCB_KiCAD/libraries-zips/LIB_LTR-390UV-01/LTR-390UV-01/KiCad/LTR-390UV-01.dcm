@@ -1,0 +1,9 @@
+EESchema-DOCLIB  Version 2.0
+#
+$CMP LTR-390UV-01
+D SENSOR OPT ULTRAVIOLET 6PINS
+K
+F https://www.arrow.com/en/products/ltr-390uv-01/lite-on-technology
+$ENDCMP
+#
+#End Doc Library
